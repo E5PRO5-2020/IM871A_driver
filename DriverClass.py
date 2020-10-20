@@ -39,7 +39,6 @@ class IM871A:
         self.IM871.close()
 
     
-
 # Running necessary functions 
 myDongle = IM871A()
 
