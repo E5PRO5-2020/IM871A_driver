@@ -37,10 +37,19 @@ IM871A is able to run in different modes. Default mode is S2.
 import serial as port
 import sys
 import struct
-import time
-import argparse
-from macros import *
    
+# Definitions import from WMBus_HCI_Spec_V1_6.pdf
+IM871A_SERIAL_SOF = 0xA5
+DEVMGMT_ID = 0x01
+TEMP_MEM = 0x00
+DEVMGMT_MSG_PING_REQ = 0x01
+DEVMGMT_MSG_PING_RSP = 0x02
+DEVMGMT_MSG_SET_CONFIG_REQ = 0x03
+DEVMGMT_MSG_SET_CONFIG_RSP = 0x04
+DEVMGMT_MSG_RESET_REQ = 0x07
+DEVMGMT_MSG_RESET_RSP = 0x08
+
+
 class IM871A:  
     """
     Implementation of a driver class for IM871A USB-dongle. 
@@ -196,7 +205,7 @@ class IM871A:
         return False
         
 
-    def open(self):
+    def open(self) -> bool:
         """
         Opens the port if port has been closed.
         It opens with the path given when instantiating the class.
@@ -204,8 +213,10 @@ class IM871A:
         try:
             self.IM871.open()
             print("Port " + self.Port + " is opened")
+            return True
         except port.SerialException as err:
             print(err)
+            return False
 
 
     def close(self):
