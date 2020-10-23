@@ -63,16 +63,18 @@ class IM871A:
 
     def __init__(self, Port): 
         self.Port = Port 
+        self.pipe = Port[8::] + '_pipe'
         self.__init_open(Port)
         self.__create_pipe(Port)
 
 
-    def __create_pipe(self, Port: str) -> bool:
+
+    def __create_pipe(self, pipe: str) -> bool:
         """
-        Creates FIFO for output when class is instantiated.
+        Creates named pipe for output when class is instantiated, if no pipe exists.
         Pipe is named after which USB-port is used.
         """
-        FIFO = self.Port[8::] + '_pipe'
+        FIFO = self.pipe
         try:
             os.mkfifo(FIFO)
             return True
@@ -81,6 +83,7 @@ class IM871A:
             if err.errno != errno.EEXIST:
                 print(err)
             return False
+
 
 
     def __init_open(self, Port: str) -> bool:
@@ -97,6 +100,7 @@ class IM871A:
         except (ValueError, port.SerialException) as err:
             print(err)
             return False
+
 
 
     def __string_to_hex(self, argument: str) -> bytes:
@@ -118,26 +122,32 @@ class IM871A:
         return switcher.get(argument, 0xa)
 
 
-    def read_data(self) -> None:
+
+    def read_data(self) -> bool:
         """
-        Read data from all meters sending with the specified link mode.
-        """
+        Read single dataframe from meters sending with the specified link mode.
+        Function is blocking until data arrives.
+        Send data into 'named pipe' (USBx_pipe).
+        Removes the WM-Bus frame before sending data to pipe.
+        """   
         while True:
             try:
                 data = self.IM871.read(100)
             except port.SerialException as err:
                 print(err)
-                return  
+                return False
 
-            # Only print out if data has any content      
             if len(data) != 0:
                 data_conv = data.hex()
                 # Output to named pipe
-                fp = open("pipe_w", "w")
+                fp = open(self.pipe, "w")
                 fp.write(data_conv[6::] + '\n')
                 fp.close()
-    
+                break
+        return True
+        
 
+    
     def ping(self) -> bool:
         """
         Ping the WM-Bus module to check if it's alive.
@@ -164,6 +174,7 @@ class IM871A:
         # If no response message arrives        
         print("!No response from WM-Bus module")
         return False
+
 
 
     def reset_module(self) -> bool:
@@ -193,6 +204,7 @@ class IM871A:
         # If no response message arrives
         print("!Module won't reset")
         return False
+
 
 
     def setup_linkmode(self, mode: str) -> bool:
@@ -230,6 +242,7 @@ class IM871A:
         return False
         
 
+
     def open(self) -> bool:
         """
         Opens the port if port has been closed.
@@ -242,6 +255,7 @@ class IM871A:
         except port.SerialException as err:
             print(err)
             return False
+
 
 
     def close(self):
