@@ -1,5 +1,5 @@
 import pytest
-from DriverClass import IM871A
+from Driver.DriverClass import IM871A
 from main import *
 
 def test_driver():

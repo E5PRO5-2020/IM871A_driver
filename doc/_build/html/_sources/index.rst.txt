@@ -7,9 +7,9 @@ Welcome to driverClass's documentation!
 =======================================
 
 .. toctree::
+   :caption: Table of content
    :maxdepth: 2
-   :caption: Contents:
-
+   
    DriverClass
 
 

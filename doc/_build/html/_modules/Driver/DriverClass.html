@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Driver.DriverClass &mdash; Kamstrup OmniPower wm-bus metering development documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home" alt="Documentation Home"> Kamstrup OmniPower wm-bus metering
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Table of content</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../DriverClass.html">Implementation of generic measurements</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Kamstrup OmniPower wm-bus metering</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>Driver.DriverClass</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for Driver.DriverClass</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Generic driver class for WM-Bus USB-dongle IM871A </span>
+<span class="sd">*************************************************</span>
+<span class="sd">:Platform: Python 3.5.10 on Linux</span>
+<span class="sd">:Synopsis: This module implements a class for communication with IM871A module.</span>
+<span class="sd">:Authors: Steffen Breinbjerg, Thomas Serup</span>
+<span class="sd">:Date: 21 October 2020</span>
+
+
+<span class="sd">Link Modes</span>
+<span class="sd">===============</span>
+<span class="sd">IM871A is able to run in different modes. Default mode is S2.</span>
+
+
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| Mode                  | Argument | Description                                           |</span>
+<span class="sd">+=======================+==========+=======================================================+</span>
+<span class="sd">| S1                    | s1       | Stationary, one way communication                     |</span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| S1-m                  | s1m      | S1 with shorter header                                |</span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| S2                    | s2       | Stationary, bidirectional communication               | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| T1                    | t1       | Frequent transmit, one way communication              | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| T2                    | t2       | Frequent transmit, bidirectional communication        |  </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| C1, Telegram Format A | c1a      | Compact, one way communication. No fixed length       | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| C1, Telegram Format B | c1b      | Compact, bidirectional communication. Fixed length    | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| C2, Telegram Format A | c2a      | Compact, one way communication. No fixed length       | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+<span class="sd">| C2, Telegram Format B | c2b      | Compact, bidirectional communication. Fixed length    | </span>
+<span class="sd">+-----------------------+----------+-------------------------------------------------------+</span>
+
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">serial</span> <span class="k">as</span> <span class="nn">port</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="c1"># Definitions import from WMBus_HCI_Spec_V1_6.pdf</span>
+<span class="n">IM871A_SERIAL_SOF</span> <span class="o">=</span> <span class="mh">0xA5</span>
+<span class="n">DEVMGMT_ID</span> <span class="o">=</span> <span class="mh">0x01</span>
+<span class="n">TEMP_MEM</span> <span class="o">=</span> <span class="mh">0x00</span>
+<span class="n">DEVMGMT_MSG_PING_REQ</span> <span class="o">=</span> <span class="mh">0x01</span>
+<span class="n">DEVMGMT_MSG_PING_RSP</span> <span class="o">=</span> <span class="mh">0x02</span>
+<span class="n">DEVMGMT_MSG_SET_CONFIG_REQ</span> <span class="o">=</span> <span class="mh">0x03</span>
+<span class="n">DEVMGMT_MSG_SET_CONFIG_RSP</span> <span class="o">=</span> <span class="mh">0x04</span>
+<span class="n">DEVMGMT_MSG_RESET_REQ</span> <span class="o">=</span> <span class="mh">0x07</span>
+<span class="n">DEVMGMT_MSG_RESET_RSP</span> <span class="o">=</span> <span class="mh">0x08</span>
+
+
+<div class="viewcode-block" id="IM871A"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A">[docs]</a><span class="k">class</span> <span class="nc">IM871A</span><span class="p">:</span>  
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implementation of a driver class for IM871A USB-dongle. </span>
+<span class="sd">    Takes path to IM871A as argument, e.g. &#39;/dev/ttyUSB1&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Port</span><span class="p">):</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">Port</span> <span class="o">=</span> <span class="n">Port</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_open</span><span class="p">(</span><span class="n">Port</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_pipe</span><span class="p">(</span><span class="n">Port</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__create_pipe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Port</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">FIFO</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Port</span> <span class="o">+</span> <span class="s1">&#39;_pipe&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkfifo</span><span class="p">(</span><span class="n">FIFO</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+
+    <span class="k">def</span> <span class="nf">__init_open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Port</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initially creates and open serial communication with USB-dongle.</span>
+<span class="sd">        Takes the port path as input.</span>
+<span class="sd">        This function is only run once when class is instantiated. </span>
+<span class="sd">        If port is closed after instantiation, use open() function to reopen port.</span>
+<span class="sd">        &quot;&quot;&quot;</span>       
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span> <span class="o">=</span> <span class="n">port</span><span class="o">.</span><span class="n">Serial</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="n">Port</span><span class="p">,</span> <span class="n">baudrate</span><span class="o">=</span><span class="mi">57600</span><span class="p">,</span> <span class="n">bytesize</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">parity</span><span class="o">=</span><span class="n">port</span><span class="o">.</span><span class="n">PARITY_NONE</span><span class="p">,</span> <span class="n">stopbits</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Connected to Serial port &quot;</span> <span class="o">+</span> <span class="n">Port</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+
+    <span class="k">def</span> <span class="nf">__string_to_hex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">argument</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert &#39;mode&#39; argument into bytes. Returns &#39;0xa&#39; if no valid input.</span>
+<span class="sd">        Function is used in &#39;setup_linkmode()&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">switcher</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;s1&#39;</span> <span class="p">:</span> <span class="mh">0x0</span><span class="p">,</span> 
+            <span class="s1">&#39;s1m&#39;</span><span class="p">:</span> <span class="mh">0x1</span><span class="p">,</span> 
+            <span class="s1">&#39;s2&#39;</span> <span class="p">:</span> <span class="mh">0x2</span><span class="p">,</span> 
+            <span class="s1">&#39;t1&#39;</span> <span class="p">:</span> <span class="mh">0x3</span><span class="p">,</span> 
+            <span class="s1">&#39;t2&#39;</span> <span class="p">:</span> <span class="mh">0x4</span><span class="p">,</span> 
+            <span class="s1">&#39;c1a&#39;</span><span class="p">:</span> <span class="mh">0x6</span><span class="p">,</span> 
+            <span class="s1">&#39;c1b&#39;</span><span class="p">:</span> <span class="mh">0x7</span><span class="p">,</span> 
+            <span class="s1">&#39;c2a&#39;</span><span class="p">:</span> <span class="mh">0x8</span><span class="p">,</span> 
+            <span class="s1">&#39;c2b&#39;</span><span class="p">:</span> <span class="mh">0x9</span>
+            <span class="p">}</span>
+        <span class="k">return</span> <span class="n">switcher</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">argument</span><span class="p">,</span> <span class="mh">0xa</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="IM871A.read_data"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.read_data">[docs]</a>    <span class="k">def</span> <span class="nf">read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read data from all meters sending with the specified link mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                <span class="k">return</span>  
+
+            <span class="c1"># Only print out if data has any content      </span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">data_conv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+                <span class="c1"># Output to named pipe</span>
+                <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;pipe_w&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+                <span class="n">fp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data_conv</span><span class="p">[</span><span class="mi">6</span><span class="p">::]</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+    
+
+<div class="viewcode-block" id="IM871A.ping"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.ping">[docs]</a>    <span class="k">def</span> <span class="nf">ping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Ping the WM-Bus module to check if it&#39;s alive.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">([</span><span class="n">IM871A_SERIAL_SOF</span><span class="p">,</span> <span class="n">DEVMGMT_ID</span><span class="p">,</span> <span class="n">DEVMGMT_MSG_PING_REQ</span><span class="p">,</span> <span class="mh">0x0</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialTimeoutException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Looking for response message from IM871A</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">data_conv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+            <span class="c1"># Looking for Endpoint-ID and Msg-ID in response</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">data_conv</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;102&quot;</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Ping Response received&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># If no response message arrives        </span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;!No response from WM-Bus module&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="IM871A.reset_module"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.reset_module">[docs]</a>    <span class="k">def</span> <span class="nf">reset_module</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reset the WM-Bus module.</span>
+<span class="sd">        The reset will be performed after approx. 500ms.</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">write</span><span class="p">([</span><span class="n">IM871A_SERIAL_SOF</span><span class="p">,</span> <span class="n">DEVMGMT_ID</span><span class="p">,</span> <span class="n">DEVMGMT_MSG_RESET_REQ</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">])</span>
+        <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialTimeoutException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Looking for response message from IM871A    </span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">data_conv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+            <span class="c1"># Looking for Endpoint-ID and Msg-ID in response</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">data_conv</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;108&quot;</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Module resetting...&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># If no response message arrives</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;!Module won&#39;t reset&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="IM871A.setup_linkmode"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.setup_linkmode">[docs]</a>    <span class="k">def</span> <span class="nf">setup_linkmode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Setup link mode for communication with meter. </span>
+<span class="sd">        Takes the link mode as argument.</span>
+<span class="sd">        If no Link Mode is set, default is &#39;S2&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Converting mode-string to byte</span>
+        <span class="n">Mode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__string_to_hex</span><span class="p">(</span><span class="n">mode</span><span class="p">)</span>
+        <span class="k">if</span><span class="p">(</span><span class="n">Mode</span> <span class="o">==</span> <span class="mh">0xa</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;!Invalid link mode&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">port</span><span class="o">.</span><span class="n">to_bytes</span><span class="p">([</span><span class="n">IM871A_SERIAL_SOF</span><span class="p">,</span> <span class="n">DEVMGMT_ID</span><span class="p">,</span> <span class="n">DEVMGMT_MSG_SET_CONFIG_REQ</span><span class="p">,</span> <span class="mh">0x03</span><span class="p">,</span> <span class="n">TEMP_MEM</span><span class="p">,</span> <span class="mh">0x2</span><span class="p">,</span> <span class="n">Mode</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialTimeoutException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Looking for responce message from IM871A     </span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">data_conv</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+            <span class="c1"># Looking for Endpoint-ID and Msg-ID in response</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">data_conv</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;104&quot;</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Link mode set to &quot;</span> <span class="o">+</span> <span class="n">mode</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># If no responce message arrives</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;!Failed to setup link mode&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+        
+
+<div class="viewcode-block" id="IM871A.open"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Opens the port if port has been closed.</span>
+<span class="sd">        It opens with the path given when instantiating the class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Port &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Port</span> <span class="o">+</span> <span class="s2">&quot; is opened&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="n">port</span><span class="o">.</span><span class="n">SerialException</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="IM871A.close"><a class="viewcode-back" href="../../DriverClass.html#Driver.DriverClass.IM871A.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Close the port</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">IM871</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Port &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Port</span> <span class="o">+</span> <span class="s2">&quot; is closed&quot;</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Team 3, E5PRO5 2020, Aarhus Uni., School of Engineering
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
