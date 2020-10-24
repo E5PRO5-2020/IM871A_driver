@@ -17,11 +17,11 @@ def test1() -> bool:
 
 if __name__ == '__main__':
     myUSB = IM871A('/dev/ttyUSB0')
-    myUSB.reset_module()      
-    # Needs time after reset before being able to setup linkmode
-    time.sleep(3)
-    myUSB.setup_linkmode('c1a')
-    while True:
-        myUSB.read_data()
+    if(myUSB.reset_module()):      
+        # Needs time after reset before being able to setup linkmode
+        time.sleep(3)
+        myUSB.setup_linkmode('c1a')
+        while True:
+            myUSB.read_data()
 
 

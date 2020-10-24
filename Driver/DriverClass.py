@@ -43,7 +43,7 @@ import os
 import subprocess
 import errno
 
-# Definitions import from WMBus_HCI_Spec_V1_6.pdf
+# Definitions imported from WMBus_HCI_Spec_V1_6.pdf
 IM871A_SERIAL_SOF = 0xA5
 DEVMGMT_ID = 0x01
 TEMP_MEM = 0x00
@@ -62,10 +62,10 @@ class IM871A:
     """ 
 
     def __init__(self, Port): 
-        self.Port = Port 
-        self.pipe = Port[8::] + '_pipe'
-        self.__init_open(Port)
-        self.__create_pipe(Port)
+        self.Port = Port                    # Path the USB-port used 
+        self.pipe = Port[8::] + '_pipe'     # Pipe name matching USB-port 
+        self.__init_open(Port)              # Initially creates and opens port
+        self.__create_pipe(Port)            # Initially creates 'named pipe' file
 
 
 
@@ -133,17 +133,21 @@ class IM871A:
         while True:
             try:
                 data = self.IM871.read(100)
-            except port.SerialException as err:
+            except (AttributeError, port.SerialException) as err:
                 print(err)
                 return False
 
             if len(data) != 0:
                 data_conv = data.hex()
                 # Output to named pipe
-                fp = open(self.pipe, "w")
-                fp.write(data_conv[6::] + '\n')
-                fp.close()
-                break
+                try:   
+                    fp = open(self.pipe, "w")
+                    fp.write(data_conv[6::] + '\n')
+                    fp.close()
+                    break
+                except IOError as err:
+                    print(err)
+                    return False
         return True
         
 
@@ -154,7 +158,7 @@ class IM871A:
         """
         try:
             self.IM871.write(port.to_bytes([IM871A_SERIAL_SOF, DEVMGMT_ID, DEVMGMT_MSG_PING_REQ, 0x0]))
-        except port.SerialTimeoutException as err:
+        except (AttributeError, port.SerialTimeoutException) as err:
             print(err)
             return False
 
@@ -184,7 +188,7 @@ class IM871A:
         """ 
         try:
             self.IM871.write([IM871A_SERIAL_SOF, DEVMGMT_ID, DEVMGMT_MSG_RESET_REQ, 0x00])
-        except port.SerialTimeoutException as err:
+        except (AttributeError, port.SerialTimeoutException) as err:
             print(err)
             return False
 
@@ -220,7 +224,7 @@ class IM871A:
             return False
         try:
             self.IM871.write(port.to_bytes([IM871A_SERIAL_SOF, DEVMGMT_ID, DEVMGMT_MSG_SET_CONFIG_REQ, 0x03, TEMP_MEM, 0x2, Mode]))
-        except port.SerialTimeoutException as err:
+        except (AttributeError, port.SerialTimeoutException) as err:
             print(err)
             return False
 
@@ -252,7 +256,7 @@ class IM871A:
             self.IM871.open()
             print("Port " + self.Port + " is opened")
             return True
-        except port.SerialException as err:
+        except (AttributeError, port.SerialException) as err:
             print(err)
             return False
 
